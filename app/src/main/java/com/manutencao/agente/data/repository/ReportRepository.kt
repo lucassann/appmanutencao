@@ -54,7 +54,7 @@ class ReportRepository(context: Context) {
         )
         _templates.value = defaultTemplates
 
-        // Adicionar alguns relatórios demonstrativos para popular o dashboard
+        // Adicionar relatórios demonstrativos iniciais
         val initialReports = listOf(
             MaintenanceReport(
                 id = UUID.randomUUID().toString(),
@@ -64,7 +64,7 @@ class ReportRepository(context: Context) {
                 assetTag = "BMB-75-01",
                 technicianName = "Carlos Eduardo Silva",
                 companyName = "TechManut Manutenção Ltda",
-                dateTimestamp = System.currentTimeMillis() - 86400000L, // Ontem
+                dateTimestamp = System.currentTimeMillis() - 86400000L,
                 rawNotes = "Bomba com forte vibração e vazamento no selo mecânico. Trocado selo e rolamento 6312.",
                 generatedSummary = "Intervenção corretiva de urgência realizada no conjunto moto-bomba devido ao rompimento das faces do selo mecânico e desgaste acentuado no rolamento dianteiro.",
                 rootCauseDiagnosis = "Desalinhamento axial provocado pela folga nos parafusos da base metálica combinado com cavitação severa na sucção.",
@@ -83,7 +83,7 @@ class ReportRepository(context: Context) {
                 assetTag = "CMP-100-02",
                 technicianName = "Carlos Eduardo Silva",
                 companyName = "TechManut Manutenção Ltda",
-                dateTimestamp = System.currentTimeMillis() - 259200000L, // 3 dias atrás
+                dateTimestamp = System.currentTimeMillis() - 259200000L,
                 rawNotes = "Start-up do novo compressor. Tensão 380V ok. Pressão de trabalho 8.5 bar ok.",
                 generatedSummary = "Comissionamento e validação de garantia efetuados no compressor novo CMP-100-02. Todos os ensaios de partida aprovados.",
                 rootCauseDiagnosis = "Equipamento novo em perfeito estado operacional.",
@@ -102,8 +102,16 @@ class ReportRepository(context: Context) {
         _reports.value = listOf(report) + _reports.value
     }
 
+    fun updateReport(updatedReport: MaintenanceReport) {
+        _reports.value = _reports.value.map { if (it.id == updatedReport.id) updatedReport else it }
+    }
+
     fun addTemplate(template: ReferenceTemplate) {
         _templates.value = _templates.value + template
+    }
+
+    fun updateTemplate(updatedTemplate: ReferenceTemplate) {
+        _templates.value = _templates.value.map { if (it.id == updatedTemplate.id) updatedTemplate else it }
     }
 
     fun saveApiKey(apiKey: String) {

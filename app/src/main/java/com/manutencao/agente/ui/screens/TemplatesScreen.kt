@@ -21,18 +21,21 @@ import java.util.UUID
 fun TemplatesScreen(
     templates: List<ReferenceTemplate>,
     onAddTemplate: (ReferenceTemplate) -> Unit,
+    onUpdateTemplate: (ReferenceTemplate) -> Unit,
     onBackClick: () -> Unit
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
+    var templateToEdit by remember { mutableStateOf<ReferenceTemplate?>(null) }
 
     var newName by remember { mutableStateOf("") }
     var newDesc by remember { mutableStateOf("") }
     var newSample by remember { mutableStateOf("") }
+    var newLogoHeader by remember { mutableStateOf("ENGENHARIA DE MANUTENÇÃO") }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Biblioteca de Modelos & Escopos", fontWeight = FontWeight.Bold) },
+                title = { Text("Biblioteca de Escopos & Layouts", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
@@ -42,7 +45,14 @@ fun TemplatesScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddDialog = true },
+                onClick = {
+                    templateToEdit = null
+                    newName = ""
+                    newDesc = ""
+                    newSample = ""
+                    newLogoHeader = "ENGENHARIA DE MANUTENÇÃO"
+                    showAddDialog = true
+                },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Novo Modelo")
@@ -58,7 +68,7 @@ fun TemplatesScreen(
         ) {
             item {
                 Text(
-                    text = "Estes modelos definem a estrutura, escopo e regras que a IA segue para gerar seus relatórios de manutenção.",
+                    text = "Estes modelos definem a estrutura, o escopo e o layout que a IA e o gerador de PDF seguem para montar seus relatórios.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -77,24 +87,38 @@ fun TemplatesScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = tpl.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            if (tpl.isDefault) {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                    shape = RoundedCornerShape(4.dp)
-                                ) {
-                                    Text(
-                                        "PADRÃO",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = tpl.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                if (tpl.isDefault) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                        shape = RoundedCornerShape(4.dp)
+                                    ) {
+                                        Text(
+                                            "PADRÃO",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
                                 }
+                            }
+
+                            IconButton(onClick = {
+                                templateToEdit = tpl
+                                newName = tpl.name
+                                newDesc = tpl.description
+                                newSample = tpl.sampleText
+                                newLogoHeader = tpl.logoHeaderText
+                                showAddDialog = true
+                            }) {
+                                Icon(Icons.Default.Edit, contentDescription = "Editar Modelo", tint = MaterialTheme.colorScheme.primary)
                             }
                         }
 
@@ -107,12 +131,20 @@ fun TemplatesScreen(
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = "Exemplo de Escopo:\n\"${tpl.sampleText}\"",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(10.dp),
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                            )
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = "Cabeçalho no PDF: ${tpl.logoHeaderText}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Exemplo de Escopo:\n\"${tpl.sampleText}\"",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                )
+                            }
                         }
                     }
                 }
@@ -123,26 +155,34 @@ fun TemplatesScreen(
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Cadastrar Novo Escopo / Modelo") },
+            title = { Text(if (templateToEdit == null) "Cadastrar Novo Modelo / Escopo" else "Editar Modelo de Escopo") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = newName,
                         onValueChange = { newName = it },
-                        label = { Text("Nome do Modelo") },
-                        placeholder = { Text("Ex: Padrão Cliente XYZ") }
+                        label = { Text("Nome do Modelo / Padrão") },
+                        placeholder = { Text("Ex: Padrão Cliente Petrobras") },
+                        singleLine = true
                     )
                     OutlinedTextField(
                         value = newDesc,
                         onValueChange = { newDesc = it },
-                        label = { Text("Descrição Breve") }
+                        label = { Text("Descrição Breve") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = newLogoHeader,
+                        onValueChange = { newLogoHeader = it },
+                        label = { Text("Texto da Logomarca no PDF") },
+                        singleLine = true
                     )
                     OutlinedTextField(
                         value = newSample,
                         onValueChange = { newSample = it },
-                        label = { Text("Escopo / Diretrizes de Texto") },
+                        label = { Text("Regras de Escopo / Diretrizes de Texto") },
                         placeholder = { Text("Exige 5 Porquês, checklist NR-10, medição de vibração...") },
-                        modifier = Modifier.height(100.dp)
+                        modifier = Modifier.height(110.dp)
                     )
                 }
             },
@@ -150,24 +190,33 @@ fun TemplatesScreen(
                 Button(
                     onClick = {
                         if (newName.isNotBlank()) {
-                            onAddTemplate(
-                                ReferenceTemplate(
-                                    id = UUID.randomUUID().toString(),
-                                    name = newName,
-                                    description = newDesc.ifBlank { "Modelo personalizado de escopo" },
-                                    sampleText = newSample.ifBlank { "Estrutura personalizada" },
-                                    requiredSections = listOf("Resumo", "Diagnóstico", "Ações"),
-                                    isDefault = false
+                            if (templateToEdit == null) {
+                                onAddTemplate(
+                                    ReferenceTemplate(
+                                        id = UUID.randomUUID().toString(),
+                                        name = newName,
+                                        description = newDesc.ifBlank { "Modelo personalizado de escopo" },
+                                        sampleText = newSample.ifBlank { "Estrutura personalizada" },
+                                        logoHeaderText = newLogoHeader.ifBlank { "ENGENHARIA DE MANUTENÇÃO" },
+                                        requiredSections = listOf("Resumo", "Diagnóstico", "Ações"),
+                                        isDefault = false
+                                    )
                                 )
-                            )
-                            newName = ""
-                            newDesc = ""
-                            newSample = ""
+                            } else {
+                                onUpdateTemplate(
+                                    templateToEdit!!.copy(
+                                        name = newName,
+                                        description = newDesc,
+                                        sampleText = newSample,
+                                        logoHeaderText = newLogoHeader
+                                    )
+                                )
+                            }
                             showAddDialog = false
                         }
                     }
                 ) {
-                    Text("Salvar Modelo")
+                    Text(if (templateToEdit == null) "Salvar Modelo" else "Atualizar Modelo")
                 }
             },
             dismissButton = {

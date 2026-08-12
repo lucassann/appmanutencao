@@ -127,6 +127,10 @@ fun AppNavigation(
             selectedReportForDetail?.let { report ->
                 ReportDetailScreen(
                     report = report,
+                    onReportUpdated = { updatedReport ->
+                        repository.updateReport(updatedReport)
+                        selectedReportForDetail = updatedReport
+                    },
                     onBackClick = { navController.popBackStack() }
                 )
             }
@@ -136,6 +140,7 @@ fun AppNavigation(
             TemplatesScreen(
                 templates = templates,
                 onAddTemplate = { newTpl -> repository.addTemplate(newTpl) },
+                onUpdateTemplate = { updatedTpl -> repository.updateTemplate(updatedTpl) },
                 onBackClick = { navController.popBackStack() }
             )
         }
