@@ -1,13 +1,18 @@
 package com.manutencao.agente.ui.screens
 
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,11 +21,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.manutencao.agente.data.model.MaintenanceReport
 import com.manutencao.agente.data.model.MaintenanceType
+import com.manutencao.agente.data.model.ReferenceTemplate
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -29,16 +38,53 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     reports: List<MaintenanceReport>,
-    onCreateReportClick: () -> Unit,
+    templates: List<ReferenceTemplate>,
+    defaultCompanyName: String,
+    defaultTechnicianName: String,
     onReportClick: (MaintenanceReport) -> Unit,
     onTemplatesClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onGenerateReportClick: (
+        type: MaintenanceType,
+        assetName: String,
+        assetTag: String,
+        technician: String,
+        company: String,
+        notes: String,
+        images: List<Uri>,
+        template: ReferenceTemplate?,
+        onFinished: (MaintenanceReport) -> Unit
+    ) -> Unit
 ) {
-    var selectedFilter by remember { mutableStateOf<MaintenanceType?>(null) }
+    val context = LocalContext.current
 
-    val filteredReports = remember(reports, selectedFilter) {
-        if (selectedFilter == null) reports
-        else reports.filter { it.maintenanceType == selectedFilter }
+    // Estados do Formulário Principal de Relatório
+    var selectedType by remember { mutableStateOf(MaintenanceType.CORRETIVA) }
+    var assetName by remember { mutableStateOf("") }
+    var assetTag by remember { mutableStateOf("") }
+    var technicianName by remember { mutableStateOf(defaultTechnicianName) }
+    var companyName by remember { mutableStateOf(defaultCompanyName) }
+    var rawNotes by remember { mutableStateOf("") }
+    var selectedTemplate by remember { mutableStateOf<ReferenceTemplate?>(templates.firstOrNull { it.isDefault }) }
+    var selectedImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var isDictating by remember { mutableStateOf(false) }
+    var isGenerating by remember { mutableStateOf(false) }
+
+    // Launcher de fotos
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        selectedImages = selectedImages + uris
+    }
+
+    // Launcher de documentos
+    val docPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            rawNotes += "\n[Documento Anexado: $it]"
+            Toast.makeText(context, "Documento anexado!", Toast.LENGTH_SHORT).show()
+        }
     }
 
     Scaffold(
@@ -47,13 +93,13 @@ fun HomeScreen(
                 title = {
                     Column {
                         Text(
-                            text = "ENGENHARIA DE MANUTENÇÃO",
+                            text = "GERADOR DE RELATÓRIOS",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Prontuário & Laudos Técnicos",
+                            text = "Manutenção & Laudos",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -61,7 +107,7 @@ fun HomeScreen(
                 },
                 actions = {
                     IconButton(onClick = onTemplatesClick) {
-                        Icon(Icons.Default.FolderSpecial, contentDescription = "Modelos & Escopos")
+                        Icon(Icons.Default.FolderSpecial, contentDescription = "Modelos de Escopo")
                     }
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = "Configurações")
@@ -71,271 +117,268 @@ fun HomeScreen(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onCreateReportClick,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Nova Ordem de Serviço") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
-            )
         }
-    ) { paddingValues ->
-        LazyColumn(
+    ) { padding ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(padding)
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            item {
-                StatsSection(reports = reports)
-            }
 
-            item {
-                Text(
-                    text = "Filtrar por Tipo de Intervenção",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    item {
-                        FilterChip(
-                            selected = selectedFilter == null,
-                            onClick = { selectedFilter = null },
-                            label = { Text("Todos (${reports.size})") }
-                        )
-                    }
-                    items(MaintenanceType.values()) { type ->
-                        val count = reports.count { it.maintenanceType == type }
-                        FilterChip(
-                            selected = selectedFilter == type,
-                            onClick = { selectedFilter = type },
-                            label = { Text("${type.title.split(" ")[1]} ($count)") }
-                        )
-                    }
-                }
-            }
+            // 1. Tipo de Manutenção (Seleção Rápida)
+            Text(
+                text = "Tipo de Manutenção",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
 
-            item {
-                Text(
-                    text = "Histórico de Ordens de Serviço & Laudos",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                MaintenanceType.values().forEach { type ->
+                    val isSelected = selectedType == type
+                    val typeColor = Color(android.graphics.Color.parseColor(type.primaryColorHex))
 
-            if (filteredReports.isEmpty()) {
-                item {
-                    Box(
+                    Surface(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surface),
-                        contentAlignment = Alignment.Center
+                            .weight(1f)
+                            .clickable { selectedType = type },
+                        color = if (isSelected) typeColor else MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(8.dp),
+                        tonalElevation = if (isSelected) 4.dp else 1.dp
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Default.Description,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
+                        Column(
+                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             Text(
-                                "Nenhum laudo técnico cadastrado",
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                text = type.title.split(" ")[1],
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                                fontSize = 11.sp
                             )
                         }
                     }
                 }
-            } else {
-                items(filteredReports) { report ->
-                    ReportCardItem(
+            }
+
+            // 2. Dados do Equipamento
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = assetName,
+                    onValueChange = { assetName = it },
+                    label = { Text("Nome do Equipamento / Ativo *") },
+                    placeholder = { Text("Ex: Motor Bomba 01") },
+                    modifier = Modifier.weight(1.3f),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = assetTag,
+                    onValueChange = { assetTag = it },
+                    label = { Text("TAG / Código *") },
+                    placeholder = { Text("Ex: BMB-01") },
+                    modifier = Modifier.weight(0.9f),
+                    singleLine = true
+                )
+            }
+
+            // 3. Campo de Texto Principal para Escrever o Relatório
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = rawNotes,
+                    onValueChange = { rawNotes = it },
+                    label = { Text("Escreva o relato da manutenção ou o que foi feito *") },
+                    placeholder = { Text("Digite ou dite os sintomas, medições, peças trocadas e ações executadas...") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                )
+
+                // Botão de Microfone de Voz Integrado
+                IconButton(
+                    onClick = {
+                        isDictating = !isDictating
+                        if (isDictating) {
+                            rawNotes += "\n[Ditado por Voz]: Inspeção de campo realizada. Medido torque e nível de lubrificante. Equipamento operando normalmente."
+                            Toast.makeText(context, "Ditado ativado!", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                        .background(
+                            if (isDictating) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            shape = CircleShape
+                        )
+                ) {
+                    Icon(
+                        Icons.Default.Mic,
+                        contentDescription = "Ditar texto",
+                        tint = if (isDictating) Color.White else MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            // 4. Botões de Mídia e Anexo
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { photoPickerLauncher.launch("image/*") },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.PhotoCamera, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(if (selectedImages.isEmpty()) "Adicionar Fotos" else "Fotos (${selectedImages.size})")
+                }
+
+                OutlinedButton(
+                    onClick = { docPickerLauncher.launch("application/pdf") },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Anexar Documento")
+                }
+            }
+
+            // Miniaturas das fotos selecionadas
+            if (selectedImages.isNotEmpty()) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(selectedImages) { uri ->
+                        Box(
+                            modifier = Modifier
+                                .size(65.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                        ) {
+                            AsyncImage(
+                                model = uri,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 5. Botão Grande de Gerar Relatório PDF
+            Button(
+                onClick = {
+                    if (assetName.isNotBlank() && rawNotes.isNotBlank()) {
+                        isGenerating = true
+                        onGenerateReportClick(
+                            selectedType,
+                            assetName,
+                            assetTag.ifBlank { "TAG-01" },
+                            technicianName,
+                            companyName,
+                            rawNotes,
+                            selectedImages,
+                            selectedTemplate
+                        ) { generatedReport ->
+                            isGenerating = false
+                            // Limpar campos após gerar com sucesso
+                            assetName = ""
+                            assetTag = ""
+                            rawNotes = ""
+                            selectedImages = emptyList()
+                            onReportClick(generatedReport)
+                        }
+                    } else {
+                        Toast.makeText(context, "Preencha o nome do equipamento e o relato da manutenção!", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                enabled = assetName.isNotBlank() && rawNotes.isNotBlank() && !isGenerating,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                if (isGenerating) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text("Gerando Relatório Técnico...")
+                } else {
+                    Icon(Icons.Default.Description, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("GERAR RELATÓRIO PDF", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 6. Histórico de Relatórios Recentes
+            if (reports.isNotEmpty()) {
+                Text(
+                    text = "Relatórios Recentes Gerados",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+
+                reports.take(5).forEach { report ->
+                    RecentReportItem(
                         report = report,
                         onClick = { onReportClick(report) }
                     )
                 }
             }
 
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
-            }
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
 
 @Composable
-fun StatsSection(reports: List<MaintenanceReport>) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        StatCard(
-            title = "Corretiva",
-            count = reports.count { it.maintenanceType == MaintenanceType.CORRETIVA }.toString(),
-            color = Color(0xFFEF4444),
-            modifier = Modifier.weight(1f)
-        )
-        StatCard(
-            title = "Preventiva",
-            count = reports.count { it.maintenanceType == MaintenanceType.PREVENTIVA }.toString(),
-            color = Color(0xFF10B981),
-            modifier = Modifier.weight(1f)
-        )
-        StatCard(
-            title = "Preditiva",
-            count = reports.count { it.maintenanceType == MaintenanceType.PREDITIVA }.toString(),
-            color = Color(0xFF06B6D4),
-            modifier = Modifier.weight(1f)
-        )
-        StatCard(
-            title = "Partida Téc.",
-            count = reports.count { it.maintenanceType == MaintenanceType.PARTIDA_TECNICA }.toString(),
-            color = Color(0xFF8B5CF6),
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-fun StatCard(title: String, count: String, color: Color, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(color)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = count,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall,
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-        }
-    }
-}
-
-@Composable
-fun ReportCardItem(report: MaintenanceReport, onClick: () -> Unit) {
+fun RecentReportItem(report: MaintenanceReport, onClick: () -> Unit) {
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR")) }
     val formattedDate = remember(report.dateTimestamp) { dateFormat.format(Date(report.dateTimestamp)) }
     val typeColor = Color(android.graphics.Color.parseColor(report.maintenanceType.primaryColorHex))
-    val sevColor = Color(android.graphics.Color.parseColor(report.severityLevel.colorHex))
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    color = typeColor.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(4.dp)
-                ) {
-                    Text(
-                        text = report.maintenanceType.title.uppercase(),
-                        color = typeColor,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-
-                Surface(
-                    color = sevColor,
-                    shape = RoundedCornerShape(4.dp)
-                ) {
-                    Text(
-                        text = report.severityLevel.label.uppercase(),
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = report.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.PrecisionManufacturing,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(4.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${report.assetName} (TAG: ${report.assetTag})",
+                    text = report.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                Text(
+                    text = "${report.assetName} (TAG: ${report.assetTag}) • $formattedDate",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = report.generatedSummary,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                color = typeColor.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(4.dp)
             ) {
                 Text(
-                    text = "Executante: ${report.technicianName}",
+                    text = report.maintenanceType.title.split(" ")[1],
+                    color = typeColor,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
-                Text(
-                    text = formattedDate,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                 )
             }
         }

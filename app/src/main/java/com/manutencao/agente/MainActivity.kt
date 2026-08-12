@@ -96,28 +96,20 @@ fun AppNavigation(
         composable("home") {
             HomeScreen(
                 reports = reports,
-                onCreateReportClick = { navController.navigate("create_report") },
+                templates = templates,
+                defaultCompanyName = repository.getCompanyName(),
+                defaultTechnicianName = repository.getTechnicianName(),
                 onReportClick = { report ->
                     selectedReportForDetail = report
                     navController.navigate("report_detail")
                 },
                 onTemplatesClick = { navController.navigate("templates") },
-                onSettingsClick = { navController.navigate("settings") }
-            )
-        }
-
-        composable("create_report") {
-            CreateReportScreen(
-                templates = templates,
-                defaultCompanyName = repository.getCompanyName(),
-                defaultTechnicianName = repository.getTechnicianName(),
-                onBackClick = { navController.popBackStack() },
-                onGenerateReportClick = { type, assetName, assetTag, tech, company, notes, images, template ->
+                onSettingsClick = { navController.navigate("settings") },
+                onGenerateReportClick = { type, assetName, assetTag, tech, company, notes, images, template, onFinished ->
                     onGenerateReport(type, assetName, assetTag, tech, company, notes, images, template) { generatedReport ->
                         selectedReportForDetail = generatedReport
-                        navController.navigate("report_detail") {
-                            popUpTo("home")
-                        }
+                        onFinished(generatedReport)
+                        navController.navigate("report_detail")
                     }
                 }
             )
