@@ -3,7 +3,6 @@ package com.manutencao.agente.ui.screens
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,7 +80,7 @@ fun ReportDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditMode) "Editar Laudo Técnico" else "Prontuário de Manutenção", fontWeight = FontWeight.Bold) },
+                title = { Text(if (isEditMode) "Editar Relatório" else "Visualizar Relatório", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
@@ -91,7 +90,7 @@ fun ReportDetailScreen(
                     IconButton(onClick = { isEditMode = !isEditMode }) {
                         Icon(
                             if (isEditMode) Icons.Default.Visibility else Icons.Default.Edit,
-                            contentDescription = if (isEditMode) "Modo Leitura" else "Editar Laudo",
+                            contentDescription = if (isEditMode) "Modo Leitura" else "Editar Relatório",
                             tint = if (isEditMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -101,25 +100,25 @@ fun ReportDetailScreen(
                             *${currentReport.title.uppercase()}*
                             *Empresa:* ${currentReport.companyName}
                             *Equipamento:* ${currentReport.assetName} (TAG: ${currentReport.assetTag})
-                            *Técnico Executante:* ${currentReport.technicianName}
-                            *Data da OS:* $formattedDate
-                            *Criticidade:* ${currentReport.severityLevel.label}
+                            *Responsável:* ${currentReport.technicianName}
+                            *Data:* $formattedDate
+                            *Severidade:* ${currentReport.severityLevel.label}
                             
-                            *1. DIAGNÓSTICO E CONDIÇÃO DE CAMPO:*
+                            *1. RESUMO E DIAGNÓSTICO:*
                             ${currentReport.generatedSummary}
                             
-                            *2. LAUDO DE CAUSA RAIZ:*
+                            *2. CAUSA RAIZ:*
                             ${currentReport.rootCauseDiagnosis}
                             
-                            *3. SERVIÇOS EXECUTADOS:*
+                            *3. AÇÕES EXECUTADAS:*
                             ${currentReport.actionsTaken}
                             
-                            *4. RECOMENDAÇÕES TÉCNICAS:*
+                            *4. RECOMENDAÇÕES:*
                             ${currentReport.recommendations}
                         """.trimIndent()
 
                         clipboardManager.setText(AnnotatedString(textToCopy))
-                        Toast.makeText(context, "Laudo copiado para a área de transferência!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Relatório copiado para a área de transferência!", Toast.LENGTH_SHORT).show()
                     }) {
                         Icon(Icons.Default.ContentCopy, contentDescription = "Copiar Texto")
                     }
@@ -148,7 +147,7 @@ fun ReportDetailScreen(
                         Icon(Icons.Default.EditNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            "Modo de Edição de Prontuário. Edite os textos abaixo como desejar.",
+                            "Modo de Edição de Relatório Ativo. Edite qualquer informação abaixo.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
@@ -157,7 +156,7 @@ fun ReportDetailScreen(
                 }
             }
 
-            // Ficha Técnica Principal
+            // Ficha do Relatório
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -204,7 +203,7 @@ fun ReportDetailScreen(
                         OutlinedTextField(
                             value = editedTitle,
                             onValueChange = { editedTitle = it },
-                            label = { Text("Título da Ordem de Serviço") },
+                            label = { Text("Título do Relatório") },
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -240,12 +239,12 @@ fun ReportDetailScreen(
 
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Executante: ${currentReport.technicianName} • ${currentReport.companyName}",
+                            text = "Responsável: ${currentReport.technicianName} • ${currentReport.companyName}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                         Text(
-                            text = "Data de emissão: $formattedDate • Downtime: ${currentReport.downtimeHours}",
+                            text = "Data de emissão: $formattedDate • Parada: ${currentReport.downtimeHours}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -253,9 +252,9 @@ fun ReportDetailScreen(
                 }
             }
 
-            // Bloco de Diagnóstico e Ações
+            // Seções do Relatório
             EditableSectionCard(
-                title = "1. Condição de Campo & Diagnóstico Inicial",
+                title = "1. Resumo e Diagnóstico do Equipamento",
                 content = editedSummary,
                 onContentChange = { editedSummary = it },
                 isEditMode = isEditMode,
@@ -263,7 +262,7 @@ fun ReportDetailScreen(
             )
 
             EditableSectionCard(
-                title = "2. Laudo Técnico de Causa Raiz",
+                title = "2. Análise de Causa Raiz",
                 content = editedRootCause,
                 onContentChange = { editedRootCause = it },
                 isEditMode = isEditMode,
@@ -271,7 +270,7 @@ fun ReportDetailScreen(
             )
 
             EditableSectionCard(
-                title = "3. Serviços Executados & Inspeção",
+                title = "3. Ações e Serviços Executados",
                 content = editedActions,
                 onContentChange = { editedActions = it },
                 isEditMode = isEditMode,
@@ -279,14 +278,14 @@ fun ReportDetailScreen(
             )
 
             EditableSectionCard(
-                title = "4. Recomendações e Plano de Ação Futuro",
+                title = "4. Recomendações Técnicas",
                 content = editedRecommendations,
                 onContentChange = { editedRecommendations = it },
                 isEditMode = isEditMode,
                 icon = Icons.Default.Lightbulb
             )
 
-            // Tabela de Componentes e Materiais
+            // Componentes e Peças
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -296,7 +295,7 @@ fun ReportDetailScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Inventory, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("5. Componentes e Materiais Substituídos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("5. Componentes e Peças Registradas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -306,7 +305,7 @@ fun ReportDetailScreen(
                             OutlinedTextField(
                                 value = newPartText,
                                 onValueChange = { newPartText = it },
-                                label = { Text("Adicionar Item / Componente") },
+                                label = { Text("Adicionar Peça / Item") },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true
                             )
@@ -340,7 +339,7 @@ fun ReportDetailScreen(
                         }
                     } else {
                         if (editedParts.isEmpty()) {
-                            Text("Nenhum componente substituído nesta intervenção.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            Text("Nenhuma peça ou componente foi registrado neste relatório.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                         } else {
                             editedParts.forEach { part ->
                                 Text("• $part", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 2.dp))
@@ -355,7 +354,7 @@ fun ReportDetailScreen(
                     onClick = {
                         onReportUpdated(currentReport)
                         isEditMode = false
-                        Toast.makeText(context, "Laudo Técnico atualizado com sucesso!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Relatório atualizado com sucesso!", Toast.LENGTH_SHORT).show()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -364,7 +363,7 @@ fun ReportDetailScreen(
                 ) {
                     Icon(Icons.Default.Save, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Salvar Atualizações do Laudo", fontWeight = FontWeight.Bold)
+                    Text("Salvar Edições do Relatório", fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -386,7 +385,7 @@ fun ReportDetailScreen(
                                 putExtra(Intent.EXTRA_STREAM, uri)
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
-                            context.startActivity(Intent.createChooser(shareIntent, "Exportar Ordem de Serviço em PDF"))
+                            context.startActivity(Intent.createChooser(shareIntent, "Compartilhar PDF do Relatório"))
                         } catch (e: Exception) {
                             Toast.makeText(context, "Erro ao gerar PDF: ${e.message}", Toast.LENGTH_LONG).show()
                         }
@@ -398,7 +397,7 @@ fun ReportDetailScreen(
                 ) {
                     Icon(Icons.Default.PictureAsPdf, contentDescription = null)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Gerar PDF OS")
+                    Text("Gerar PDF")
                 }
 
                 OutlinedButton(

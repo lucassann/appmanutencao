@@ -58,7 +58,6 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
 
-    // Estados do Formulário Principal de Relatório
     var selectedType by remember { mutableStateOf(MaintenanceType.CORRETIVA) }
     var assetName by remember { mutableStateOf("") }
     var assetTag by remember { mutableStateOf("") }
@@ -70,14 +69,12 @@ fun HomeScreen(
     var isDictating by remember { mutableStateOf(false) }
     var isGenerating by remember { mutableStateOf(false) }
 
-    // Launcher de fotos
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris ->
         selectedImages = selectedImages + uris
     }
 
-    // Launcher de documentos
     val docPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -93,13 +90,13 @@ fun HomeScreen(
                 title = {
                     Column {
                         Text(
-                            text = "GERADOR DE RELATÓRIOS",
+                            text = "CRIADOR DE RELATÓRIOS",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Manutenção & Laudos",
+                            text = "Relatórios de Manutenção",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -107,7 +104,7 @@ fun HomeScreen(
                 },
                 actions = {
                     IconButton(onClick = onTemplatesClick) {
-                        Icon(Icons.Default.FolderSpecial, contentDescription = "Modelos de Escopo")
+                        Icon(Icons.Default.FolderSpecial, contentDescription = "Modelos & Escopos")
                     }
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = "Configurações")
@@ -128,9 +125,9 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
 
-            // 1. Tipo de Manutenção (Seleção Rápida)
+            // 1. Tipo de Manutenção
             Text(
-                text = "Tipo de Manutenção",
+                text = "Tipo de Manutenção do Relatório",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -172,7 +169,7 @@ fun HomeScreen(
                 OutlinedTextField(
                     value = assetName,
                     onValueChange = { assetName = it },
-                    label = { Text("Nome do Equipamento / Ativo *") },
+                    label = { Text("Nome do Equipamento *") },
                     placeholder = { Text("Ex: Motor Bomba 01") },
                     modifier = Modifier.weight(1.3f),
                     singleLine = true
@@ -187,24 +184,23 @@ fun HomeScreen(
                 )
             }
 
-            // 3. Campo de Texto Principal para Escrever o Relatório
+            // 3. Campo de Texto Principal do Relatório
             Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
                     value = rawNotes,
                     onValueChange = { rawNotes = it },
-                    label = { Text("Escreva o relato da manutenção ou o que foi feito *") },
-                    placeholder = { Text("Digite ou dite os sintomas, medições, peças trocadas e ações executadas...") },
+                    label = { Text("Escreva as informações do relatório *") },
+                    placeholder = { Text("Digite ou dite os sintomas, medições, fotos e detalhes para o relatório...") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(150.dp)
                 )
 
-                // Botão de Microfone de Voz Integrado
                 IconButton(
                     onClick = {
                         isDictating = !isDictating
                         if (isDictating) {
-                            rawNotes += "\n[Ditado por Voz]: Inspeção de campo realizada. Medido torque e nível de lubrificante. Equipamento operando normalmente."
+                            rawNotes += "\n[Ditado por Voz]: Inspeção realizada. Equipamento operando normalmente dentro dos parâmetros."
                             Toast.makeText(context, "Ditado ativado!", Toast.LENGTH_SHORT).show()
                         }
                     },
@@ -224,7 +220,7 @@ fun HomeScreen(
                 }
             }
 
-            // 4. Botões de Mídia e Anexo
+            // 4. Mídias e Fotos
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -248,7 +244,6 @@ fun HomeScreen(
                 }
             }
 
-            // Miniaturas das fotos selecionadas
             if (selectedImages.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(selectedImages) { uri ->
@@ -268,7 +263,7 @@ fun HomeScreen(
                 }
             }
 
-            // 5. Botão Grande de Gerar Relatório PDF
+            // 5. Botão GERAR RELATÓRIO PDF
             Button(
                 onClick = {
                     if (assetName.isNotBlank() && rawNotes.isNotBlank()) {
@@ -284,7 +279,6 @@ fun HomeScreen(
                             selectedTemplate
                         ) { generatedReport ->
                             isGenerating = false
-                            // Limpar campos após gerar com sucesso
                             assetName = ""
                             assetTag = ""
                             rawNotes = ""
@@ -292,7 +286,7 @@ fun HomeScreen(
                             onReportClick(generatedReport)
                         }
                     } else {
-                        Toast.makeText(context, "Preencha o nome do equipamento e o relato da manutenção!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Preencha o nome do equipamento e o texto do relatório!", Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier
@@ -304,7 +298,7 @@ fun HomeScreen(
                 if (isGenerating) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text("Gerando Relatório Técnico...")
+                    Text("Criando Relatório...")
                 } else {
                     Icon(Icons.Default.Description, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -314,10 +308,10 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 6. Histórico de Relatórios Recentes
+            // 6. Relatórios Criados Recentemente
             if (reports.isNotEmpty()) {
                 Text(
-                    text = "Relatórios Recentes Gerados",
+                    text = "Meus Relatórios Recentes",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )

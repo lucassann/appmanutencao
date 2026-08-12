@@ -33,7 +33,7 @@ class GeminiAgentService(private val context: Context) {
         val timestamp = System.currentTimeMillis()
 
         if (apiKey.isBlank()) {
-            return@withContext createHumanEngineeringReport(
+            return@withContext createHumanReport(
                 id = reportId,
                 type = maintenanceType,
                 assetName = assetName,
@@ -64,39 +64,39 @@ class GeminiAgentService(private val context: Context) {
 
             val templateRulePrompt = if (referenceTemplate != null) {
                 """
-                REGRAS E ESCOPO DO LAUDO (SEGUIR ESTE PADRÃO DE CAMPO):
+                ESTRUTURA E PADRÃO DO RELATÓRIO:
                 Padrão: ${referenceTemplate.name}
                 Diretrizes: ${referenceTemplate.sampleText}
                 """.trimIndent()
             } else {
-                "Escreva estritamente como um Engenheiro/Técnico de Manutenção experiente preenchendo uma Ordem de Serviço (OS) formal."
+                "Escreva um Relatório de Manutenção claro, direto e profissional."
             }
 
             val systemInstructionPrompt = """
-                PROIBIDO USAR QUALQUER LINGUAGEM DE INTELIGÊNCIA ARTIFICIAL OU FRASES GENÉRICAS (ex: "como assistente de IA", "com base nos dados", "este relatório apresenta").
-                ESCREVA COMO UM TÉCNICO DE CAMPO HUMANO ESPECIALISTA EM MANUTENÇÃO INDUSTRIAL.
+                PROIBIDO USAR FRASES GENÉRICAS DE IA (ex: "como assistente de IA", "com base nos dados").
+                ESTE APLICATIVO É ESTRITAMENTE PARA CRIAR E EDITAR RELATÓRIOS DE MANUTENÇÃO.
 
-                DADOS DA ORDEM DE SERVIÇO:
-                - Tipo de Intervenção: ${maintenanceType.title}
-                - Ativo / Equipamento: $assetName (TAG: $assetTag)
-                - Executante: $technicianName
+                DADOS DO RELATÓRIO:
+                - Tipo de Manutenção: ${maintenanceType.title}
+                - Equipamento / Ativo: $assetName (TAG: $assetTag)
+                - Responsável: $technicianName
                 - Empresa: $companyName
 
                 $templateRulePrompt
 
-                APONTAMENTOS E NOTAS DE CAMPO:
+                OBSERVAÇÕES E NOTAS DO RELATÓRIO:
                 "$rawNotes"
 
-                Responda ESTRITAMENTE em formato JSON (sem marcadores de código Markdown nem preâmbulos):
+                Responda ESTRITAMENTE em formato JSON (sem marcadores de código Markdown):
                 {
-                  "titulo": "Laudo Técnico de Manutenção - $assetName",
-                  "resumoExecutivo": "Texto direto e técnico descrevendo a condição observada e histórico recente",
-                  "diagnosticoCausaRaiz": "Laudo técnico da falha/condição mecânica ou elétrica",
-                  "acoesExecutadas": "Detalhamento passo a passo dos serviços executados e medições",
-                  "recomendacoes": "Recomendações técnicas de manutenção e prazos",
+                  "titulo": "Relatório de Manutenção - $assetName",
+                  "resumoExecutivo": "Resumo descritivo da intervenção realizada e estado do equipamento",
+                  "diagnosticoCausaRaiz": "Análise da causa da falha ou condição observada",
+                  "acoesExecutadas": "Detalhamento passo a passo das ações e serviços executados",
+                  "recomendacoes": "Recomendações técnicas para a próxima manutenção",
                   "nivelSeveridade": "BAIXO" | "MEDIO" | "ALTO" | "CRITICO",
-                  "tempoParadaHoras": "Ex: 2.5h",
-                  "pecasSubstituidas": ["Item 1", "Item 2"]
+                  "tempoParadaHoras": "Ex: 2.0h",
+                  "pecasSubstituidas": ["Peça 1", "Peça 2"]
                 }
             """.trimIndent()
 
@@ -124,7 +124,7 @@ class GeminiAgentService(private val context: Context) {
                 timestamp = timestamp
             )
         } catch (e: Exception) {
-            createHumanEngineeringReport(
+            createHumanReport(
                 id = reportId,
                 type = maintenanceType,
                 assetName = assetName,
@@ -152,11 +152,11 @@ class GeminiAgentService(private val context: Context) {
         templateId: String?,
         timestamp: Long
     ): MaintenanceReport {
-        val title = extractJsonField(responseText, "titulo") ?: "Laudo Técnico de Manutenção - $assetName"
+        val title = extractJsonField(responseText, "titulo") ?: "Relatório de Manutenção - $assetName"
         val summary = extractJsonField(responseText, "resumoExecutivo") ?: responseText
-        val cause = extractJsonField(responseText, "diagnosticoCausaRaiz") ?: "Constatado desgaste operacional dentro do ciclo normativo."
-        val actions = extractJsonField(responseText, "acoesExecutadas") ?: "Serviços executados conforme plano de manutenção."
-        val recs = extractJsonField(responseText, "recomendacoes") ?: "Recomenda-se manter rotina de inspeção periódica."
+        val cause = extractJsonField(responseText, "diagnosticoCausaRaiz") ?: "Análise efetuada durante a rotina de manutenção."
+        val actions = extractJsonField(responseText, "acoesExecutadas") ?: "Serviços executados conforme descrito no relato."
+        val recs = extractJsonField(responseText, "recomendacoes") ?: "Recomenda-se manter o plano de acompanhamento periódico."
         val severityStr = extractJsonField(responseText, "nivelSeveridade") ?: "MEDIO"
         val downtime = extractJsonField(responseText, "tempoParadaHoras") ?: "1.5h"
 
@@ -195,7 +195,7 @@ class GeminiAgentService(private val context: Context) {
         return match?.groupValues?.get(1)
     }
 
-    private fun createHumanEngineeringReport(
+    private fun createHumanReport(
         id: String,
         type: MaintenanceType,
         assetName: String,
@@ -210,33 +210,33 @@ class GeminiAgentService(private val context: Context) {
 
         val (diag, actions, recs, sev, downtime, parts) = when (type) {
             MaintenanceType.CORRETIVA -> Hexatuple(
-                "Constatada folga excessiva no conjunto rotativo e degradação do elemento de vedação. Falha ocasionada por solicitação mecânica acima do limite nominal e desalinhamento entre acoplamentos.",
-                "1. Desmontagem parcial do conjunto e higienização das superfícies.\n2. Remoção do rolamento danificado e substituição do selo mecânico.\n3. Alinhamento de eixos com relógio comparador e reaperto de base com torque especificado.\n4. Teste de rodagem sob carga sem vazamentos ou vibração fora da norma.",
-                "Efetuar inspeção preventiva da base de fixação a cada 30 dias e verificar o torque dos parafusos do acoplamento.",
+                "Constatada folga excessiva e desalignmento no equipamento. Intervenção efetuada para reparo dos componentes avariados.",
+                "1. Desmontagem parcial do conjunto e higienização das peças.\n2. Substituição dos componentes desgastados.\n3. Alinhamento e reaperto de fixação.\n4. Teste de rodagem aprovado.",
+                "Realizar inspeção de acompanhamento nos próximos 30 dias.",
                 SeverityLevel.ALTO,
                 "2.5h",
-                listOf("Selo Mecânico 45mm SiC/Viton", "Rolamento SKF 6312 C3", "Elemento Elástico NBR")
+                listOf("Selo Mecânico 45mm", "Rolamento SKF 6312", "Elemento Elástico")
             )
             MaintenanceType.PREVENTIVA -> Hexatuple(
-                "Inspeção periódica de rotina realizada de acordo com o plano de manutenção preventiva da planta. Todos os componentes elétricos e mecânicos avaliados.",
-                "1. Limpeza técnica do painel e reaperto dos bornes elétricos.\n2. Coleta de amostra de fluido lubrificante e substituição do elemento filtrante.\n3. Lubrificação dos mananciais de rolamento com graxa à base de lítio.\n4. Verificação de corrente consumida e tensão nas três fases.",
-                "Manter o cronograma de inspeções trimestrais programado e monitorar a temperatura de operação dos mananciais.",
+                "Inspeção periódica efetuada conforme plano de manutenção preventiva.",
+                "1. Limpeza técnica e reaperto das conexões.\n2. Substituição de elementos filtrantes.\n3. Lubrificação dos rolamentos.\n4. Verificação de medições elétricas e mecânicas.",
+                "Manter o cronograma de inspeções preventivas programado.",
                 SeverityLevel.BAIXO,
                 "1.0h",
-                listOf("Filtro de Óleo Sintético", "Graxa NLGI 2 Lítio (250g)", "Elemento Filtrante de Admissão")
+                listOf("Filtro de Óleo Sintético", "Graxa NLGI 2 Lítio", "Filtro de Admissão")
             )
             MaintenanceType.PREDITIVA -> Hexatuple(
-                "Acompanhamento de parâmetros preditivos (análise de vibração e termografia). Medição identificou elevação no espectro de frequência de alta velocidade (Envelope de Aceleração 4.2 g-s).",
-                "1. Medição de vibração em 3 eixos (Horizontal, Vertical e Axial).\n2. Inspeção termográfica dos pontos de contato e conexões elétricas (Máx 48°C - OK).\n3. Registro dos espectros na base de dados para acompanhamento da curva P-F.",
-                "Programar a substituição do rolamento dianteiro para a próxima parada de manutenção quinzenal, prevenindo falha inesperada.",
+                "Acompanhamento de parâmetros preditivos e medição de vibração.",
+                "1. Registro das medições nos 3 eixos.\n2. Inspeção termográfica dos pontos de contato.\n3. Coleta de dados para histórico preditivo.",
+                "Acompanhar a evolução dos níveis na próxima inspeção.",
                 SeverityLevel.MEDIO,
                 "0.0h",
                 listOf("Fluido de Lavagem Técnica")
             )
             MaintenanceType.PARTIDA_TECNICA -> Hexatuple(
-                "Procedimento de comissionamento e start-up de equipamento novo. Todos os testes de malha de controle, segurança e carga efetuados conforme manual do fabricante.",
-                "1. Conferência de dados de chapa e infraestrutura de instalação.\n2. Ensaio de isolação dos enrolamentos elétricos (Megômetro 500V - R > 100MΩ).\n3. Teste de rotação a vazio por 45min e medição de ruído acústico (72 dB A).\n4. Teste de carga nominal contínua por 2 horas com registro de parâmetros.",
-                "Equipamento liberado e aprovado para operação industrial contínua. Termo de garantia assinado e validado.",
+                "Partida técnica e testes de funcionamento de equipamento novo.",
+                "1. Verificação de dados de instalação.\n2. Teste de rotação e medições de partida.\n3. Teste de operação contínua aprovado.",
+                "Equipamento aprovado no relatório de partida técnica.",
                 SeverityLevel.BAIXO,
                 "0.0h",
                 emptyList()
@@ -245,7 +245,7 @@ class GeminiAgentService(private val context: Context) {
 
         return MaintenanceReport(
             id = id,
-            title = "LAUDO TÉCNICO DE MANUTENÇÃO - $assetName",
+            title = "RELATÓRIO DE MANUTENÇÃO - $assetName",
             maintenanceType = type,
             assetName = assetName,
             assetTag = assetTag,
@@ -253,7 +253,7 @@ class GeminiAgentService(private val context: Context) {
             companyName = companyName,
             dateTimestamp = timestamp,
             rawNotes = notes,
-            generatedSummary = "Laudo de intervenção técnica relativo ao equipamento $assetName (TAG: $assetTag). Atividade executada de acordo com as especificações normativas de manutenção.",
+            generatedSummary = "Relatório de manutenção referente ao equipamento $assetName (TAG: $assetTag). Atividade concluída e registrada.",
             rootCauseDiagnosis = diag,
             actionsTaken = actions,
             recommendations = recs,

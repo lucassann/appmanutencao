@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.Environment
@@ -27,17 +26,17 @@ class PdfReportExporter(private val context: Context) {
         val paint = Paint().apply { isAntiAlias = true }
         val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR"))
         val formattedDate = dateFormat.format(Date(report.dateTimestamp))
-        val osNumber = "OS-${report.id.take(8).uppercase()}"
+        val reportNumber = "REL-${report.id.take(8).uppercase()}"
 
-        // 1. Moldura Externa do Documento Oficial (Estilo Prontuário Técnico)
+        // 1. Moldura do Relatório
         paint.color = Color.parseColor("#1E293B")
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1.5f
         canvas.drawRect(20f, 20f, 575f, 822f, paint)
 
-        // 2. Cabeçalho Principal (Tabela do Topo)
+        // 2. Cabeçalho do Relatório
         paint.style = Paint.Style.FILL
-        paint.color = Color.parseColor("#0F172A") // Navy Escuro Institucional
+        paint.color = Color.parseColor("#0F172A")
         canvas.drawRect(20f, 20f, 575f, 75f, paint)
 
         // Texto Nome da Empresa
@@ -49,20 +48,20 @@ class PdfReportExporter(private val context: Context) {
         paint.textSize = 9f
         paint.color = Color.parseColor("#94A3B8")
         paint.isFakeBoldText = false
-        canvas.drawText("SISTEMA INTEGRADO DE ENGENHARIA DE MANUTENÇÃO", 35f, 62f, paint)
+        canvas.drawText("RELATÓRIO TÉCNICO DE MANUTENÇÃO", 35f, 62f, paint)
 
         // Texto Direita do Cabeçalho
         paint.color = Color.WHITE
         paint.textSize = 11f
         paint.isFakeBoldText = true
-        canvas.drawText("ORDEM DE SERVIÇO: $osNumber", 380f, 43f, paint)
+        canvas.drawText("Nº DO RELATÓRIO: $reportNumber", 360f, 43f, paint)
 
         paint.textSize = 9f
         paint.isFakeBoldText = false
         paint.color = Color.parseColor("#CBD5E1")
-        canvas.drawText("EMISSÃO: $formattedDate", 380f, 60f, paint)
+        canvas.drawText("DATA: $formattedDate", 360f, 60f, paint)
 
-        // 3. Tarja do Tipo de Intervenção
+        // 3. Tarja do Tipo de Manutenção
         var currentY = 90f
         val typeHeaderColor = Color.parseColor(report.maintenanceType.primaryColorHex)
         paint.color = typeHeaderColor
@@ -71,9 +70,9 @@ class PdfReportExporter(private val context: Context) {
         paint.color = Color.WHITE
         paint.textSize = 10f
         paint.isFakeBoldText = true
-        canvas.drawText("LAUDO TÉCNICO DE MANUTENÇÃO - ${report.maintenanceType.title.uppercase()}", 30f, currentY + 15f, paint)
+        canvas.drawText("${report.maintenanceType.title.uppercase()} - RELATÓRIO DE MANUTENÇÃO", 30f, currentY + 15f, paint)
 
-        // 4. Ficha Técnica do Ativo (Grade de Atributos)
+        // 4. Dados do Equipamento & Relatório
         currentY += 32f
         paint.color = Color.parseColor("#F8FAFC")
         canvas.drawRect(20f, currentY, 575f, currentY + 75f, paint)
@@ -82,37 +81,36 @@ class PdfReportExporter(private val context: Context) {
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 0.5f
         canvas.drawRect(20f, currentY, 575f, currentY + 75f, paint)
-        canvas.drawLine(297f, currentY, 297f, currentY + 75f, paint) // Linha central vertical
+        canvas.drawLine(297f, currentY, 297f, currentY + 75f, paint)
 
         paint.style = Paint.Style.FILL
         paint.textSize = 9.5f
 
-        // Coluna Esquerda da Ficha
+        // Coluna Esquerda
         drawField(canvas, paint, "EQUIPAMENTO / ATIVO:", report.assetName, 30f, currentY + 20f)
-        drawField(canvas, paint, "TAG / CÓDIGO DO ATIVO:", report.assetTag, 30f, currentY + 42f)
-        drawField(canvas, paint, "TEMPO DE PARADA (DOWNTIME):", report.downtimeHours, 30f, currentY + 64f)
+        drawField(canvas, paint, "TAG DO EQUIPAMENTO:", report.assetTag, 30f, currentY + 42f)
+        drawField(canvas, paint, "TEMPO DE PARADA:", report.downtimeHours, 30f, currentY + 64f)
 
-        // Coluna Direita da Ficha
-        drawField(canvas, paint, "TÉCNICO EXECUTA NTE:", report.technicianName, 310f, currentY + 20f)
-        drawField(canvas, paint, "CRITICIDADE / SEVERIDADE:", report.severityLevel.label.uppercase(), 310f, currentY + 42f)
-        drawField(canvas, paint, "STATUS DA ORDEM DE SERVIÇO:", "CONCLUÍDO / APROVADO", 310f, currentY + 64f)
+        // Coluna Direita
+        drawField(canvas, paint, "RESPONSÁVEL:", report.technicianName, 310f, currentY + 20f)
+        drawField(canvas, paint, "SEVERIDADE:", report.severityLevel.label.uppercase(), 310f, currentY + 42f)
+        drawField(canvas, paint, "STATUS DO RELATÓRIO:", "EMITIDO E REVISADO", 310f, currentY + 64f)
 
-        // 5. Seções Formais de Engenharia
+        // 5. Seções do Relatório
         currentY += 95f
-        currentY = drawEngineeringBlock(canvas, paint, "1. CONDIÇÃO DE CAMPO & DIAGNÓSTICO INICIAL", report.generatedSummary, currentY)
-        currentY = drawEngineeringBlock(canvas, paint, "2. LAUDO DE CAUSA RAIZ / ANÁLISE DE FALHA", report.rootCauseDiagnosis, currentY)
-        currentY = drawEngineeringBlock(canvas, paint, "3. DETALHAMENTO DOS SERVIÇOS EXECUTADOS", report.actionsTaken, currentY)
-        currentY = drawEngineeringBlock(canvas, paint, "4. RECOMENDAÇÕES TÉCNICAS E MONITORAMENTO", report.recommendations, currentY)
+        currentY = drawReportBlock(canvas, paint, "1. RESUMO E DIAGNÓSTICO DO EQUIPAMENTO", report.generatedSummary, currentY)
+        currentY = drawReportBlock(canvas, paint, "2. ANÁLISE DE CAUSA RAIZ", report.rootCauseDiagnosis, currentY)
+        currentY = drawReportBlock(canvas, paint, "3. AÇÕES E SERVIÇOS EXECUTADOS", report.actionsTaken, currentY)
+        currentY = drawReportBlock(canvas, paint, "4. RECOMENDAÇÕES TÉCNICAS", report.recommendations, currentY)
 
-        // 6. Tabela de Peças & Insumos Aplicados
+        // 6. Tabela de Peças & Componentes do Relatório
         currentY += 10f
         paint.color = Color.parseColor("#0F172A")
         paint.textSize = 10f
         paint.isFakeBoldText = true
-        canvas.drawText("5. RELAÇÃO DE COMPONENTES E MATERIAIS SUBSTITUÍDOS", 30f, currentY, paint)
+        canvas.drawText("5. COMPONENTES E MATERIAIS MENCIONADOS NO RELATÓRIO", 30f, currentY, paint)
 
         currentY += 8f
-        // Cabeçalho da Tabela
         paint.color = Color.parseColor("#E2E8F0")
         canvas.drawRect(30f, currentY, 565f, currentY + 18f, paint)
 
@@ -121,7 +119,7 @@ class PdfReportExporter(private val context: Context) {
         paint.isFakeBoldText = true
         canvas.drawText("ITEM", 40f, currentY + 13f, paint)
         canvas.drawText("DESCRIÇÃO DO COMPONENTE / PEÇA", 90f, currentY + 13f, paint)
-        canvas.drawText("SITUAÇÃO / APLICAÇÃO", 440f, currentY + 13f, paint)
+        canvas.drawText("STATUS", 440f, currentY + 13f, paint)
 
         currentY += 18f
         paint.isFakeBoldText = false
@@ -130,8 +128,8 @@ class PdfReportExporter(private val context: Context) {
 
         if (report.partsReplaced.isEmpty()) {
             canvas.drawText("01", 40f, currentY + 14f, paint)
-            canvas.drawText("Nenhum material de reposição foi demandado nesta intervenção.", 90f, currentY + 14f, paint)
-            canvas.drawText("Inspeção OK", 440f, currentY + 14f, paint)
+            canvas.drawText("Nenhuma peça ou componente foi registrado neste relatório.", 90f, currentY + 14f, paint)
+            canvas.drawText("OK", 440f, currentY + 14f, paint)
             currentY += 20f
         } else {
             report.partsReplaced.take(4).forEachIndexed { idx, part ->
@@ -142,12 +140,12 @@ class PdfReportExporter(private val context: Context) {
                 paint.color = Color.parseColor("#334155")
                 canvas.drawText(String.format("%02d", idx + 1), 40f, currentY + 13f, paint)
                 canvas.drawText(part, 90f, currentY + 13f, paint)
-                canvas.drawText("Substituído", 440f, currentY + 13f, paint)
+                canvas.drawText("Registrado", 440f, currentY + 13f, paint)
                 currentY += 18f
             }
         }
 
-        // 7. Termo de Responsabilidade & Bloco de Assinaturas
+        // 7. Bloco de Assinatura do Relatório
         val signatureY = 745f
 
         paint.color = Color.parseColor("#F1F5F9")
@@ -156,9 +154,8 @@ class PdfReportExporter(private val context: Context) {
         paint.color = Color.parseColor("#475569")
         paint.textSize = 7.5f
         paint.isFakeBoldText = false
-        canvas.drawText("Atestamos que os serviços técnicos acima discriminados foram executados conforme os padrões normativos de segurança e engenharia.", 40f, signatureY - 3f, paint)
+        canvas.drawText("Declaro que o presente Relatório de Manutenção reflete com precisão os serviços e condições observados no equipamento.", 40f, signatureY - 3f, paint)
 
-        // Linhas de Assinatura
         paint.color = Color.parseColor("#64748B")
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 1f
@@ -172,18 +169,18 @@ class PdfReportExporter(private val context: Context) {
         paint.color = Color.parseColor("#0F172A")
 
         canvas.drawText(report.technicianName.uppercase(), 70f, signatureY + 43f, paint)
-        canvas.drawText("SUPERVISÃO / ACEITE DO CLIENTE", 355f, signatureY + 43f, paint)
+        canvas.drawText("APROVAÇÃO / RECEBIMENTO", 370f, signatureY + 43f, paint)
 
         paint.textSize = 7.5f
         paint.isFakeBoldText = false
         paint.color = Color.parseColor("#64748B")
-        canvas.drawText("Técnico Executante / CFT-CREA", 75f, signatureY + 52f, paint)
-        canvas.drawText("Assinatura e Carimbo", 390f, signatureY + 52f, paint)
+        canvas.drawText("Responsável Técnico", 100f, signatureY + 52f, paint)
+        canvas.drawText("Assinatura", 410f, signatureY + 52f, paint)
 
         pdfDocument.finishPage(page)
 
         val outputDir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: context.filesDir
-        val pdfFile = File(outputDir, "Laudo_${report.assetTag}_${report.id.take(6)}.pdf")
+        val pdfFile = File(outputDir, "Relatorio_${report.assetTag}_${report.id.take(6)}.pdf")
         FileOutputStream(pdfFile).use { out ->
             pdfDocument.writeTo(out)
         }
@@ -204,7 +201,7 @@ class PdfReportExporter(private val context: Context) {
         canvas.drawText(value, x + labelWidth + 5f, y, paint)
     }
 
-    private fun drawEngineeringBlock(canvas: Canvas, paint: Paint, title: String, content: String, startY: Float): Float {
+    private fun drawReportBlock(canvas: Canvas, paint: Paint, title: String, content: String, startY: Float): Float {
         var y = startY
         paint.color = Color.parseColor("#0F172A")
         paint.textSize = 9.5f

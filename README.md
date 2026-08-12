@@ -1,50 +1,35 @@
-# 📱 Agente de IA para Relatórios de Manutenção (Android Nativo - Kotlin + Jetpack Compose)
+# 📱 Aplicativo de Criar e Editar Relatórios de Manutenção (Android Nativo - Kotlin + Jetpack Compose)
 
-Aplicativo Android nativo de alto nível desenvolvido em **Kotlin** com a biblioteca **Jetpack Compose** e **Google Gemini SDK Multimodal**.
+Aplicativo Android nativo de alta produtividade focado exclusivamente em **CRIAR E EDITAR RELATÓRIOS DE MANUTENÇÃO** (Corretiva, Preventiva, Preditiva e Partida Técnica).
 
 ---
 
-## 🎯 Principais Recursos
+## 🎯 Principais Funcionalidades
 
-1. **Tipos de Manutenção Suportados**:
-   - 🔴 **Corretiva**: Diagnóstico de causa raiz, tempo de parada (*downtime*), ações executadas e peças trocadas.
-   - 🟢 **Preventiva**: Checklists operacionais, status dos componentes, agendamento de inspeções.
-   - 🔵 **Preditiva**: Análise de sintomas (vibração, termografia, ultrassom, óleo) e curva P-F.
-   - 🟣 **Partida Técnica / Comissionamento**: Start-up de equipamentos novos, parâmetros nominais vs. medidos, testes de carga e termo de garantia.
+1. **Criação e Edição Completa de Relatórios**:
+   - **Criação Direta**: Digite ou dite o relato da manutenção no aplicativo.
+   - **Edição Livre de Texto**: Edite qualquer texto, diagnóstico, ações executadas, causa raiz ou lista de peças antes de exportar o relatório.
+   - **Tipos de Relatório**:
+     - 🔴 **Relatório de Manutenção Corretiva**
+     - 🟢 **Relatório de Manutenção Preventiva**
+     - 🔵 **Relatório de Manutenção Preditiva**
+     - 🟣 **Relatório de Partida Técnica / Comissionamento**
 
-2. **Entradas Multimodais no Celular**:
-   - **Fotos**: Captura direta via Câmera/Galeria de peças danificadas, placas e painéis.
-   - **Documentos & Escopos**: Anexo de arquivos PDF/DOCX de referência.
-   - **Ditado por Voz**: Integração de microfone para relato viva-voz durante a inspeção.
+2. **Entradas Multimodais**:
+   - **Fotos**: Fotos das peças, etiquetas e equipamentos anexadas ao relatório.
+   - **Documentos & Escopos**: Anexo de arquivos PDF de referência.
+   - **Ditado por Voz**: Toque no microfone para ditar o texto do relatório.
 
-3. **Biblioteca de Modelos & Escopos da Empresa**:
-   - Cadastre padrões específicos (ex: *Padrão Petrobras*, *Padrão Start-up*, *Padrão Inspeção Simplificada*).
-   - O Agente de IA lê o escopo e garante que a saída siga exatamente o seu padrão visual e técnico.
-
-4. **Gerador e Exportador em PDF Nativo**:
-   - Gera um PDF profissional com cabeçalho da empresa, tabela de dados do ativo, badges de severidade (*Baixo, Médio, Alto, Crítico*), galeria de fotos e bloco de assinatura técnica.
-   - **Compartilhamento com 1 Toque**: Envio direto em PDF via WhatsApp, E-mail ou Telegram.
+3. **Gerador de PDF de Relatório de Manutenção**:
+   - Compila o relatório em um documento PDF no padrão A4 com cabeçalho da empresa, tabela de equipamentos, diagnóstico e bloco de assinatura.
+   - **Envio Direto no WhatsApp**: Compartilhamento rápido do PDF com 1 toque.
 
 ---
 
 ## 🛠️ Como Abrir e Compilar no Android Studio
 
 1. Abra o **Android Studio**.
-2. Clique em **Open** e selecione a pasta:
+2. Clique em **Open** e selecione a pasta do projeto:
    `/home/lucas/AgenteManutencaoAndroid`
-3. Aguarde a sincronização do Gradle (`Sync Project with Gradle Files`).
-4. Conecte seu celular Android via cabo USB (com Depuração USB ativa) ou use um Emulador.
-5. Clique no botão **Run (Shift + F10)**.
-
-### Para Gerar o Arquivo `.apk` Instalável:
-No Android Studio, acesse o menu superior:
-> **Build** > **Build APK(s)** / **Generate Signed Bundle / APK**
-O arquivo `.apk` será gerado na pasta `app/build/outputs/apk/debug/app-debug.apk`.
-
----
-
-## 🔑 Como Inserir sua Chave API do Google Gemini (Opcional)
-
-1. No aplicativo no celular, vá na aba de **Configurações** (ícone de engrenagem).
-2. Cole sua chave gratuita obtida no [Google AI Studio](https://aistudio.google.com/app/apikey).
-3. Caso você esteja sem a chave, o app possui um **motor de fallback inteligente** que continuará gerando relatórios com base em modelos locais.
+3. Aguarde o Gradle sincronizar (`Sync Project with Gradle Files`).
+4. Clique em **Run (Shift + F10)** ou vá em **Build > Build APK(s)** para gerar o arquivo `.apk` de instalação no seu celular.
