@@ -42,7 +42,6 @@ fun ReportDetailScreen(
 
     var isEditMode by remember { mutableStateOf(false) }
 
-    // Estados dos campos editáveis do relatório
     var editedTitle by remember(report) { mutableStateOf(report.title) }
     var editedAssetName by remember(report) { mutableStateOf(report.assetName) }
     var editedAssetTag by remember(report) { mutableStateOf(report.assetTag) }
@@ -82,7 +81,7 @@ fun ReportDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditMode) "Editar Relatório" else "Visualizar Relatório", fontWeight = FontWeight.Bold) },
+                title = { Text(if (isEditMode) "Editar Laudo Técnico" else "Prontuário de Manutenção", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
@@ -92,7 +91,7 @@ fun ReportDetailScreen(
                     IconButton(onClick = { isEditMode = !isEditMode }) {
                         Icon(
                             if (isEditMode) Icons.Default.Visibility else Icons.Default.Edit,
-                            contentDescription = if (isEditMode) "Ver Modo Leitura" else "Editar Relatório",
+                            contentDescription = if (isEditMode) "Modo Leitura" else "Editar Laudo",
                             tint = if (isEditMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -102,25 +101,25 @@ fun ReportDetailScreen(
                             *${currentReport.title.uppercase()}*
                             *Empresa:* ${currentReport.companyName}
                             *Equipamento:* ${currentReport.assetName} (TAG: ${currentReport.assetTag})
-                            *Técnico:* ${currentReport.technicianName}
-                            *Data:* $formattedDate
-                            *Severidade:* ${currentReport.severityLevel.label}
+                            *Técnico Executante:* ${currentReport.technicianName}
+                            *Data da OS:* $formattedDate
+                            *Criticidade:* ${currentReport.severityLevel.label}
                             
-                            *1. DIAGNÓSTICO:*
+                            *1. DIAGNÓSTICO E CONDIÇÃO DE CAMPO:*
                             ${currentReport.generatedSummary}
                             
-                            *2. CAUSA RAIZ:*
+                            *2. LAUDO DE CAUSA RAIZ:*
                             ${currentReport.rootCauseDiagnosis}
                             
-                            *3. AÇÕES DE CAMPO:*
+                            *3. SERVIÇOS EXECUTADOS:*
                             ${currentReport.actionsTaken}
                             
-                            *4. RECOMENDAÇÕES:*
+                            *4. RECOMENDAÇÕES TÉCNICAS:*
                             ${currentReport.recommendations}
                         """.trimIndent()
 
                         clipboardManager.setText(AnnotatedString(textToCopy))
-                        Toast.makeText(context, "Relatório copiado para a área de transferência!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Laudo copiado para a área de transferência!", Toast.LENGTH_SHORT).show()
                     }) {
                         Icon(Icons.Default.ContentCopy, contentDescription = "Copiar Texto")
                     }
@@ -136,11 +135,10 @@ fun ReportDetailScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Banner Modo de Edição Ativo
             AnimatedVisibility(visible = isEditMode) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Row(
@@ -150,7 +148,7 @@ fun ReportDetailScreen(
                         Icon(Icons.Default.EditNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            "Modo de Edição Ativo. Modifique qualquer texto do relatório abaixo.",
+                            "Modo de Edição de Prontuário. Edite os textos abaixo como desejar.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
@@ -159,7 +157,7 @@ fun ReportDetailScreen(
                 }
             }
 
-            // Cabeçalho com Informações Principais
+            // Ficha Técnica Principal
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -173,28 +171,28 @@ fun ReportDetailScreen(
                     ) {
                         Surface(
                             color = typeColor,
-                            shape = RoundedCornerShape(6.dp)
+                            shape = RoundedCornerShape(4.dp)
                         ) {
                             Text(
                                 text = currentReport.maintenanceType.title.uppercase(),
                                 color = Color.White,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
 
                         if (!isEditMode) {
                             Surface(
                                 color = sevColor,
-                                shape = RoundedCornerShape(6.dp)
+                                shape = RoundedCornerShape(4.dp)
                             ) {
                                 Text(
-                                    text = "GRAVIDADE: ${currentReport.severityLevel.label}",
+                                    text = "SEVERIDADE: ${currentReport.severityLevel.label.uppercase()}",
                                     color = Color.White,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
                             }
                         }
@@ -206,7 +204,7 @@ fun ReportDetailScreen(
                         OutlinedTextField(
                             value = editedTitle,
                             onValueChange = { editedTitle = it },
-                            label = { Text("Título do Relatório") },
+                            label = { Text("Título da Ordem de Serviço") },
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -224,20 +222,6 @@ fun ReportDetailScreen(
                                 modifier = Modifier.weight(1f)
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Nível de Severidade:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.padding(top = 4.dp)
-                        ) {
-                            SeverityLevel.values().forEach { sev ->
-                                FilterChip(
-                                    selected = editedSeverity == sev,
-                                    onClick = { editedSeverity = sev },
-                                    label = { Text(sev.label, fontSize = 11.sp) }
-                                )
-                            }
-                        }
                     } else {
                         Text(
                             text = currentReport.title,
@@ -248,7 +232,7 @@ fun ReportDetailScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Ativo: ${currentReport.assetName} (TAG: ${currentReport.assetTag})",
+                            text = "Equipamento: ${currentReport.assetName} | TAG: ${currentReport.assetTag}",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary
@@ -256,12 +240,12 @@ fun ReportDetailScreen(
 
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Técnico: ${currentReport.technicianName} • ${currentReport.companyName}",
+                            text = "Executante: ${currentReport.technicianName} • ${currentReport.companyName}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                         Text(
-                            text = "Data de emissão: $formattedDate • Parada: ${currentReport.downtimeHours}",
+                            text = "Data de emissão: $formattedDate • Downtime: ${currentReport.downtimeHours}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -269,9 +253,9 @@ fun ReportDetailScreen(
                 }
             }
 
-            // Seções Editáveis ou de Leitura
+            // Bloco de Diagnóstico e Ações
             EditableSectionCard(
-                title = "1. Resumo Executivo & Diagnóstico",
+                title = "1. Condição de Campo & Diagnóstico Inicial",
                 content = editedSummary,
                 onContentChange = { editedSummary = it },
                 isEditMode = isEditMode,
@@ -279,7 +263,7 @@ fun ReportDetailScreen(
             )
 
             EditableSectionCard(
-                title = "2. Análise de Causa Raiz",
+                title = "2. Laudo Técnico de Causa Raiz",
                 content = editedRootCause,
                 onContentChange = { editedRootCause = it },
                 isEditMode = isEditMode,
@@ -287,7 +271,7 @@ fun ReportDetailScreen(
             )
 
             EditableSectionCard(
-                title = "3. Ações Executadas em Campo",
+                title = "3. Serviços Executados & Inspeção",
                 content = editedActions,
                 onContentChange = { editedActions = it },
                 isEditMode = isEditMode,
@@ -295,14 +279,14 @@ fun ReportDetailScreen(
             )
 
             EditableSectionCard(
-                title = "4. Recomendações Técnicas",
+                title = "4. Recomendações e Plano de Ação Futuro",
                 content = editedRecommendations,
                 onContentChange = { editedRecommendations = it },
                 isEditMode = isEditMode,
                 icon = Icons.Default.Lightbulb
             )
 
-            // Edição de Componentes & Peças Trocadas
+            // Tabela de Componentes e Materiais
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -312,7 +296,7 @@ fun ReportDetailScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Inventory, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("5. Peças e Materiais Utilizados", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("5. Componentes e Materiais Substituídos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -322,7 +306,7 @@ fun ReportDetailScreen(
                             OutlinedTextField(
                                 value = newPartText,
                                 onValueChange = { newPartText = it },
-                                label = { Text("Adicionar Peça / Material") },
+                                label = { Text("Adicionar Item / Componente") },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true
                             )
@@ -366,13 +350,12 @@ fun ReportDetailScreen(
                 }
             }
 
-            // Salvar Edição
             if (isEditMode) {
                 Button(
                     onClick = {
                         onReportUpdated(currentReport)
                         isEditMode = false
-                        Toast.makeText(context, "Relatório atualizado com sucesso!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Laudo Técnico atualizado com sucesso!", Toast.LENGTH_SHORT).show()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -381,11 +364,11 @@ fun ReportDetailScreen(
                 ) {
                     Icon(Icons.Default.Save, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Salvar Alterações do Relatório", fontWeight = FontWeight.Bold)
+                    Text("Salvar Atualizações do Laudo", fontWeight = FontWeight.Bold)
                 }
             }
 
-            // Botões de Ação para Exportação PDF e WhatsApp
+            // Exportação PDF e WhatsApp
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -403,7 +386,7 @@ fun ReportDetailScreen(
                                 putExtra(Intent.EXTRA_STREAM, uri)
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
-                            context.startActivity(Intent.createChooser(shareIntent, "Compartilhar Relatório PDF"))
+                            context.startActivity(Intent.createChooser(shareIntent, "Exportar Ordem de Serviço em PDF"))
                         } catch (e: Exception) {
                             Toast.makeText(context, "Erro ao gerar PDF: ${e.message}", Toast.LENGTH_LONG).show()
                         }
@@ -415,7 +398,7 @@ fun ReportDetailScreen(
                 ) {
                     Icon(Icons.Default.PictureAsPdf, contentDescription = null)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Gerar PDF")
+                    Text("Gerar PDF OS")
                 }
 
                 OutlinedButton(
@@ -432,7 +415,7 @@ fun ReportDetailScreen(
                             }
                             context.startActivity(whatsappIntent)
                         } catch (e: Exception) {
-                            Toast.makeText(context, "Abrindo compartilhador geral...", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Abrindo compartilhador...", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier
@@ -447,47 +430,6 @@ fun ReportDetailScreen(
             }
 
             Spacer(modifier = Modifier.height(30.dp))
-        }
-    }
-}
-
-@Composable
-fun EditableSectionCard(
-    title: String,
-    content: String,
-    onContentChange: (String) -> Unit,
-    isEditMode: Boolean,
-    icon: androidx.compose.ui.graphics.vector.ImageVector
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (isEditMode) {
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = onContentChange,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 100.dp)
-                )
-            } else {
-                Text(
-                    content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    lineHeight = 22.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-                )
-            }
         }
     }
 }

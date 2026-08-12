@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.manutencao.agente.data.model.MaintenanceReport
 import com.manutencao.agente.data.model.MaintenanceType
-import com.manutencao.agente.data.model.SeverityLevel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -48,13 +47,13 @@ fun HomeScreen(
                 title = {
                     Column {
                         Text(
-                            text = "AGENTE DE MANUTENÇÃO",
+                            text = "ENGENHARIA DE MANUTENÇÃO",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Relatórios & Diagnóstico IA",
+                            text = "Prontuário & Laudos Técnicos",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -62,7 +61,7 @@ fun HomeScreen(
                 },
                 actions = {
                     IconButton(onClick = onTemplatesClick) {
-                        Icon(Icons.Default.FolderSpecial, contentDescription = "Modelos de Referência")
+                        Icon(Icons.Default.FolderSpecial, contentDescription = "Modelos & Escopos")
                     }
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = "Configurações")
@@ -77,7 +76,7 @@ fun HomeScreen(
             ExtendedFloatingActionButton(
                 onClick = onCreateReportClick,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Novo Relatório") },
+                text = { Text("Nova Ordem de Serviço") },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White
             )
@@ -90,15 +89,13 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Cards de Estatísticas Rápidas
             item {
                 StatsSection(reports = reports)
             }
 
-            // Filtros por Tipo de Manutenção
             item {
                 Text(
-                    text = "Filtrar por Categoria",
+                    text = "Filtrar por Tipo de Intervenção",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
@@ -125,10 +122,9 @@ fun HomeScreen(
                 }
             }
 
-            // Cabeçalho da Lista
             item {
                 Text(
-                    text = "Histórico de Intervenções",
+                    text = "Histórico de Ordens de Serviço & Laudos",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -153,7 +149,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                "Nenhum relatório encontrado",
+                                "Nenhum laudo técnico cadastrado",
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
                         }
@@ -263,10 +259,9 @@ fun ReportCardItem(report: MaintenanceReport, onClick: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Badge Tipo
                 Surface(
                     color = typeColor.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(6.dp)
+                    shape = RoundedCornerShape(4.dp)
                 ) {
                     Text(
                         text = report.maintenanceType.title.uppercase(),
@@ -277,13 +272,12 @@ fun ReportCardItem(report: MaintenanceReport, onClick: () -> Unit) {
                     )
                 }
 
-                // Badge Severidade
                 Surface(
                     color = sevColor,
-                    shape = RoundedCornerShape(6.dp)
+                    shape = RoundedCornerShape(4.dp)
                 ) {
                     Text(
-                        text = report.severityLevel.label,
+                        text = report.severityLevel.label.uppercase(),
                         color = Color.White,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
@@ -334,7 +328,7 @@ fun ReportCardItem(report: MaintenanceReport, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Técnico: ${report.technicianName}",
+                    text = "Executante: ${report.technicianName}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
